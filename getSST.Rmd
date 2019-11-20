@@ -1,0 +1,168 @@
+---
+title: "Extraer series de temperaturasuperficial del mar"
+author: 'E. Montes'
+date: "2019-05-16"
+output: 
+  html_document:
+    toc:  TRUE
+    toc_float: TRUE
+    theme: united
+    highlight: tango
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+# make this an external chunk that can be included in any file
+require(knitr)
+options(width = 100, stringAsFactors=F)
+opts_chunk$set(echo =T, message = F, error = F, warning = F, comment = NA,  
+               fig.align = 'left',  fig.width = 7.5, fig.height = 6,
+               tidy = F, cache.path = '.cache/', fig.path = 'fig/')
+               
+library(RColorBrewer)
+palette(brewer.pal(8, "Set2"))
+
+library(readr)
+library(rerddap)
+library(lubridate)
+library(dplyr)
+library(flexdashboard)
+library(reshape2)
+library(leaflet)
+library(ggplot2)
+library(vegan)
+library(xts)
+library(dygraphs)
+library(plotly)
+
+```
+
+Last run `r lubridate::now()`
+
+## Goal
+Get SST timeseries from satellite products using erddap the source of data is `jplMURSST41`. See https://coastwatch.pfeg.noaa.gov/erddap/info/jplMURSST41/index.html data is extracted with `rerddap::griddap` for a particular coordinate and stored as csv file.
+
+
+```{r} 
+## functions
+
+## remove all spaces from string
+NoSpaces = function(x){
+  return(gsub(" ", "", x))
+}
+```
+
+## Valores por defecto.
+
+Aqui coloca las coordenadas de tu sitio donde queieres realizar la extracción de la serie temporal, las fechas y el nombre de la colección de datos de dónde quieres extraer los datos.
+
+También es importante definir las fechas para calcular los valores climatológicos. En este caso, los datos mas antiguos son de junio de 2002 y decidimos para el cálculo de la climatología en diciembre de 2012.
+
+```{r setdefaults}
+## set site coordinates and time for SST extraction
+SSTSiteName = "Playa 7 Olas"   ## for the resulting file name
+SSTcoords.lon = -74.
+SSTcoords.lat = 12.
+
+SSTstartDate = "2002-06-01"
+
+## set climatological date start-end
+SSTclimStartDate = "2002-06-01"
+SSTclimEndDate = "2012-12-31"
+
+## set dataset source
+SSTsource = info("jplMURSST41")
+```
+
+
+## Extraer los Datos
+
+Ahora vamos a extraer los datos. Esto puede tomar varios minutos dependiendo de la conexión de Internet. 
+
+```{r getSST}
+##
+## Get sst 
+SST <- griddap(SSTsource, 
+              time=c(SSTstartDate, "last"),
+              longitude = c(SSTcoords.lon,SSTcoords.lon),
+              latitude = c(SSTcoords.lat,SSTcoords.lat),
+              fields = "analysed_sst",
+              fmt = "csv")
+
+SST = SST[,c(1,4)]
+names(SST) = c("time", "SST")
+
+## convert time to a Data object
+SST$time = as.Date(ymd_hms(SST$time))
+```
+
+## Climatología
+
+Ahora calculamos la climatología
+
+```{r climatology} 
+##
+## Calculate climatology
+SST.clim = SST %>% filter(time>=ymd(SSTclimStartDate), time<=SSTclimEndDate) %>% 
+  group_by(yDay = yday(time)) %>% 
+  summarise(SST.mean = mean(SST),
+            SST.median = median(SST),
+            SST.sd = sd(SST),
+            SST.q5 = quantile(SST, 0.05),
+            SST.q10 = quantile(SST, 0.10),
+            SST.q25 = quantile(SST, 0.25),
+            SST.q75 = quantile(SST, 0.75),
+            SST.q90 = quantile(SST, 0.90),
+            SST.q95 = quantile(SST, 0.95),
+            SST.min = min(SST),
+            SST.max = max(SST))
+```
+
+## Figuras
+
+Grafiquemos usando los gráficos dinámicos de dygraph:
+
+``` {r plots}
+## Plot SST
+SST.xts = as.xts(SST$SST, SST$time)
+dygraph(SST.xts, 
+        ylab = "Sea Surface Temperature °C") %>% 
+  dySeries("V1", label ="SST Â°C", color = "steelblue") %>%
+  dyHighlight(highlightCircleSize = 5, 
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE) %>% 
+  dyOptions(fillGraph = FALSE, fillAlpha = 0.4) %>% 
+  dyRangeSelector(dateWindow = c(max(SST$time) - years(5), max(SST$time)))
+
+### SST Last year with smoothed Climatology {data-width=250}
+
+## subset SST for last year
+SST.lastyear = SST %>% filter(year(time)==max(year(time)))
+
+## make the plot
+pp = ggplot(SST.clim, aes(yDay, SST.mean))
+pp = pp + geom_line() + geom_smooth(span=0.25, se=FALSE, colour="steelblue") +  
+  geom_ribbon(aes(ymin=SST.q25, ymax=SST.q75), fill="steelblue", alpha=0.5) +
+  geom_line(data=SST.lastyear, aes(yday(time), SST), colour="red") + 
+  ylab("Sea Surface Temperature °C") + xlab("Day of the Year") + 
+  theme_bw(base_size = 9) 
+ggplotly(pp) %>% plotly::config(displayModeBar = F) 
+```
+
+
+y finalmente grabamos los datos en archivos csv para análisis posteriores
+
+```{r savedata}
+## save SST
+write_csv(SST, path = paste0(NoSpaces(SSTSiteName), "_SST.csv"))
+write_csv(SST.clim, path = paste0(NoSpaces(SSTSiteName), "_Climatology.csv"))
+```
+
+
+
+
+
+
