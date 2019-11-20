@@ -14,13 +14,13 @@ require("rerddap")
 sstInfo <- info('jplMURSST41')
 
 ## Define coordinates
-latitude = c(8., 16.)
-longitude = c(-84., -64.)
+latitude = c(-60., -30.)
+longitude = c(-70., -40.)
 
 # get latest daily sst
-murSST <- griddap(sstInfo, latitude=c(8., 16.), longitude=c(-84., -64.), time = c('last','last'), fields = 'analysed_sst')
+murSST <- griddap(sstInfo, latitude=c(-60., -30.), longitude=c(-70., -40.), time = c('last','last'), fields = 'analysed_sst')
 mycolor <- colors$temperature
-w <- map_data("worldHires", ylim = c(8., 16.), xlim = c(-84., -64.))
+w <- map_data("worldHires", ylim = c(-60., -30.), xlim = c(-70., -40.))
 
 ## plot SST map
 ggplot(data = murSST$data, aes(x = lon, y = lat, fill = analysed_sst)) +
@@ -28,4 +28,4 @@ ggplot(data = murSST$data, aes(x = lon, y = lat, fill = analysed_sst)) +
   geom_raster(interpolate = FALSE) +
   scale_fill_gradientn(colours = mycolor, na.value = NA) +
   theme_bw() + ylab("latitude") + xlab("longitude") +
-  coord_fixed(1.3, xlim = c(-84., -64.),  ylim = c(8., 16.)) + ggtitle("Latest MUR SST")
+  coord_fixed(1.3, xlim = c(-70., -40.),  ylim = c(-60., -30.)) + ggtitle("Latest MUR SST")

@@ -28,9 +28,9 @@ NoSpaces = function(x){
 }
 
 ## set site coordinates and time for CHL extraction
-CHLSiteName = "Playa 7 Olas"   ## for the resulting file name
-CHLcoords.lon = -74.
-CHLcoords.lat = 12.
+CHLSiteName = "Golfo Nuevo"   ## for the resulting file name
+CHLcoords.lon = -64.3
+CHLcoords.lat = -42.4
 
 CHLstartDate = "2012-01-02"
 

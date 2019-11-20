@@ -10,17 +10,17 @@ require("mapdata")
 
 # get latest daily chl
 chlaInfo <- info('nesdisVHNSQchlaMonthly')
-viirsCHLA <- griddap(chlaInfo, latitude = c(8., 16.), longitude = c(-84, -64), time = c('last','last'), fields = 'chlor_a')
+viirsCHLA <- griddap(chlaInfo, latitude = c(-60., -30.), longitude = c(-70, -40), time = c('last','last'), fields = 'chlor_a')
 
 
 mycolor <- colors$chlorophyll
-w <- map_data("worldHires", ylim = c(8., 16.), xlim = c(-84., -64.))
+w <- map_data("worldHires", ylim = c(-60., -30.), xlim = c(-70, -40))
 ggplot(data = viirsCHLA$data, aes(x = lon, y = lat, fill = log(chlor_a))) + 
   geom_polygon(data = w, aes(x = long, y = lat, group = group), fill = "grey80") +
   geom_raster(interpolate = FALSE) +
   scale_fill_gradientn(colours = mycolor, na.value = NA) +
   theme_bw() + ylab("latitude") + xlab("longitude") +
-  coord_fixed(1.3, xlim = c(-84., -64.),  ylim = c(8., 16.)) + ggtitle("Latest VIIRS Monthly Chla")
+  coord_fixed(1.3, xlim = c(-70, -40),  ylim = c(-60., -30.)) + ggtitle("Latest VIIRS Monthly Chla")
 
 
 

@@ -63,9 +63,9 @@ También es importante definir las fechas para calcular los valores climatológi
 
 ```{r setdefaults}
 ## set site coordinates and time for SST extraction
-SSTSiteName = "Playa 7 Olas"   ## for the resulting file name
-SSTcoords.lon = -74.
-SSTcoords.lat = 12.
+SSTSiteName = "Golfo Nuevo"   ## for the resulting file name 	
+SSTcoords.lon = -64.3
+SSTcoords.lat = -42.4
 
 SSTstartDate = "2002-06-01"
 
