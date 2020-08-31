@@ -1,3 +1,9 @@
+### Map latest SST monthly value from GHRSST product using erddap
+### the source of data is `jplMURSST41` See https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.html
+### data is extracted with `rerddap::griddap` for a selected region of interest.
+### By E. Montes (emontesh@usf.edu) 
+### 2020-08-31
+
 require("rerddap")
 require("ggplot2")
 require("mapdata")
