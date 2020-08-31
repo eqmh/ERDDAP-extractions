@@ -28,18 +28,18 @@ NoSpaces = function(x){
 }
 
 ## set site coordinates and time for CHL extraction
-CHLSiteName = "Golfo Nuevo"   ## for the resulting file name
-CHLcoords.lon = -64.3
-CHLcoords.lat = -42.4
+CHLSiteName = "GPatagonia"   ## for the resulting file name
+CHLcoords.lon = -64
+CHLcoords.lat = -41.7
 
-CHLstartDate = "2012-01-02"
+CHLstartDate = "2012-01-01"
 
 ## set climatological date start-end
-CHLclimStartDate = "2012-01-02"
-CHLclimEndDate = "2018-12-31"
+CHLclimStartDate = "2012-01-01"
+CHLclimEndDate = "2016-12-31"
 
 ## set dataset source
-CHLsource = info("nesdisVHNSQchlaMonthly")
+CHLsource = info("erdMH1chla8day")
 
 ##
 ## Get CHL 
@@ -47,10 +47,11 @@ CHL <- griddap(CHLsource,
                time=c(CHLstartDate, "last"),
                longitude = c(CHLcoords.lon,CHLcoords.lon),
                latitude = c(CHLcoords.lat,CHLcoords.lat),
-               fields = "chlor_a", fmt = "csv")
+               fields = "chlorophyll", fmt = "csv")
 
-CHL = CHL[,c(1,5)]
+CHL = CHL[,c(1,4)]
 names(CHL) = c("time", "CHL")
+CHL = na.omit(CHL)
 
 ## convert time to a Data object
 CHL$time = as.Date(ymd_hms(CHL$time))
@@ -74,7 +75,7 @@ CHL.clim = CHL %>% filter(time>=ymd(CHLclimStartDate), time<=CHLclimEndDate) %>%
 ## Plot CHL
 CHL.xts = as.xts(CHL$CHL, CHL$time)
 dygraph(CHL.xts, 
-        ylab = "Chlorophyll a (mg m-3)") %>% 
+        ylab = "Chlorophyll a (mg m-3) @ lon: -64 and lat: 41.7") %>% 
   dySeries("V1", label ="CHL", color = "steelblue") %>%
   dyHighlight(highlightCircleSize = 5, 
               highlightSeriesBackgroundAlpha = 0.2,
@@ -92,7 +93,7 @@ pp = ggplot(CHL.clim, aes(yDay, CHL.mean))
 pp = pp + geom_line() + geom_smooth(span=0.25, se=FALSE, colour="steelblue") +  
   geom_ribbon(aes(ymin=CHL.q25, ymax=CHL.q75), fill="steelblue", alpha=0.5) +
   geom_line(data=CHL.lastyear, aes(yday(time), CHL), colour="red") + 
-  ylab("Chlorophyll a (mg m-3)") + xlab("Day of the Year") + 
+  ylab("Chlorophyll a (mg m-3) @ lon = -64 and lat = 41.7") + xlab("Day of the Year") + 
   theme_bw(base_size = 9) 
 ggplotly(pp) %>% plotly::config(displayModeBar = F) 
 

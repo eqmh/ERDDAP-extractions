@@ -28,9 +28,9 @@ NoSpaces = function(x){
 }
 
 ## set site coordinates and time for SST extraction
-SSTSiteName = "Playa 7 Olas"   ## for the resulting file name
-SSTcoords.lon = -74.
-SSTcoords.lat = 12.
+SSTSiteName = "Patagonia"   ## for the resulting file name
+SSTcoords.lon = -64.
+SSTcoords.lat = -41.7
 
 SSTstartDate = "2002-06-01"
 
@@ -75,8 +75,8 @@ SST.clim = SST %>% filter(time>=ymd(SSTclimStartDate), time<=SSTclimEndDate) %>%
 ## Plot SST
 SST.xts = as.xts(SST$SST, SST$time)
 dygraph(SST.xts, 
-        ylab = "Sea Surface Temperature °C") %>% 
-  dySeries("V1", label ="SST Â°C", color = "steelblue") %>%
+        ylab = "Sea Surface Temperature (Deg C)") %>% 
+  dySeries("V1", label ="SST (Deg C)", color = "steelblue") %>%
   dyHighlight(highlightCircleSize = 5, 
               highlightSeriesBackgroundAlpha = 0.2,
               hideOnMouseOut = FALSE) %>% 
@@ -93,7 +93,7 @@ pp = ggplot(SST.clim, aes(yDay, SST.mean))
 pp = pp + geom_line() + geom_smooth(span=0.25, se=FALSE, colour="steelblue") +  
   geom_ribbon(aes(ymin=SST.q25, ymax=SST.q75), fill="steelblue", alpha=0.5) +
   geom_line(data=SST.lastyear, aes(yday(time), SST), colour="red") + 
-  ylab("Sea Surface Temperature °C") + xlab("Day of the Year") + 
+  ylab("Sea Surface Temperature (Deg C)") + xlab("Day of the Year") + 
   theme_bw(base_size = 9) 
 ggplotly(pp) %>% plotly::config(displayModeBar = F) 
 

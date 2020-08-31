@@ -1,0 +1,270 @@
+---
+title: "Satellite SST and CHL data extractions from selected locations"
+output: html_notebook
+---
+
+## Marine Biodiversity Observation Network Pole to Pole of the Americas (MBON Pole to Pole)
+
+Written by E. Montes (emontesh@usf.edu) and Eduardo Klein (eklein@usb.ve) on Auguts 28, 2020.
+
+This code pulls data from NOAA's [ERDDAP](https://coastwatch.pfeg.noaa.gov/erddap/index.html) servers and creates time series plots of sea surface temperature (SST) and chlorophyll-a concentration (CHL), and maps showing the latest available data for the selected region.
+
+# Step 1
+First, let's load required libraries
+```{r}
+library(readr)
+library(rerddap)
+library(lubridate)
+library(dplyr)
+library(flexdashboard)
+library(reshape2)
+library(leaflet)
+library(ggplot2)
+library(vegan)
+library(xts)
+library(dygraphs)
+library(plotly)
+library(mapdata)
+
+library(RColorBrewer)
+palette(brewer.pal(8, "Set2"))
+```
+
+# Step 2
+Query SST data from ERDDAP
+```{r}
+## remove all spaces from string
+NoSpaces = function(x){
+  return(gsub(" ", "", x))
+}
+
+## set site coordinates and time for SST extraction
+SSTSiteName = "Patagonia"   ## for the resulting file name
+SSTcoords.lon = -64.
+SSTcoords.lat = -41.7
+
+SSTstartDate = "2002-06-01"
+
+## set climatological date start-end
+SSTclimStartDate = "2002-06-01"
+SSTclimEndDate = "2012-12-31"
+
+## set dataset source
+SSTsource = info("jplMURSST41")
+
+##
+## Get sst 
+SST <- griddap(SSTsource, 
+              time=c(SSTstartDate, "last"),
+              longitude = c(SSTcoords.lon,SSTcoords.lon),
+              latitude = c(SSTcoords.lat,SSTcoords.lat),
+              fields = "analysed_sst",
+              fmt = "csv")
+
+SST = SST[,c(1,4)]
+names(SST) = c("time", "SST")
+
+## convert time to a Data object
+SST$time = as.Date(ymd_hms(SST$time))
+
+```
+
+# Step 3
+Calculate SST climatology
+```{r}
+SST.clim = SST %>% filter(time>=ymd(SSTclimStartDate), time<=SSTclimEndDate) %>% 
+  group_by(yDay = yday(time)) %>% 
+  summarise(SST.mean = mean(SST),
+            SST.median = median(SST),
+            SST.sd = sd(SST),
+            SST.q5 = quantile(SST, 0.05),
+            SST.q10 = quantile(SST, 0.10),
+            SST.q25 = quantile(SST, 0.25),
+            SST.q75 = quantile(SST, 0.75),
+            SST.q90 = quantile(SST, 0.90),
+            SST.q95 = quantile(SST, 0.95),
+            SST.min = min(SST),
+            SST.max = max(SST))
+```
+
+# Step 4
+Plot SST time series
+```{r}
+SST.xts = as.xts(SST$SST, SST$time)
+dygraph(SST.xts, 
+        ylab = "Sea Surface Temperature (Deg C)") %>% 
+  dySeries("V1", label ="SST (Deg C)", color = "steelblue") %>%
+  dyHighlight(highlightCircleSize = 5, 
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE) %>% 
+  dyOptions(fillGraph = FALSE, fillAlpha = 0.4) %>% 
+  dyRangeSelector(dateWindow = c(max(SST$time) - years(5), max(SST$time)))
+
+## subset SST for last year
+SST.lastyear = SST %>% filter(year(time)==max(year(time)))
+
+## make the plot
+pp = ggplot(SST.clim, aes(yDay, SST.mean))
+pp = pp + geom_line() + geom_smooth(span=0.25, se=FALSE, colour="steelblue") +  
+  geom_ribbon(aes(ymin=SST.q25, ymax=SST.q75), fill="steelblue", alpha=0.5) +
+  geom_line(data=SST.lastyear, aes(yday(time), SST), colour="red") + 
+  ylab("Sea Surface Temperature (Deg C)") + xlab("Day of the Year") + 
+  theme_bw(base_size = 9) 
+ggplotly(pp) %>% plotly::config(displayModeBar = F) 
+```
+
+# Step 5
+Save SST time series data
+```{r}
+write_csv(SST, path = paste0(NoSpaces(SSTSiteName), "_SST.csv"))
+write_csv(SST.clim, path = paste0(NoSpaces(SSTSiteName), "_Climatology.csv"))
+```
+
+# Step 6
+Create a map of the latest SST data
+```{r}
+sstInfo <- info('jplMURSST41')
+# get latest 3-day composite sst
+GHRSST <- griddap(sstInfo, latitude = c(-60., -20.), longitude = c(-90., -47.), time = c('last','last'), fields = 'analysed_sst')
+
+mycolor <- colors$temperature
+w <- map_data("worldHires", ylim = c(-60., -20.), xlim = c(-90., -47.))
+ggplot(data = GHRSST$data, aes(x = lon, y = lat, fill = analysed_sst)) + 
+  geom_polygon(data = w, aes(x = long, y = lat, group = group), fill = "grey80") +
+  geom_raster(interpolate = FALSE) +
+  scale_fill_gradientn(colours = mycolor, na.value = NA) +
+  theme_bw() + ylab("latitude") + xlab("longitude") +
+  coord_fixed(1.3, xlim = c(-90., -47.),  ylim = c(-60., -20.)) + ggtitle("Latest daily SST data")
+```
+
+
+# Step 7
+Query CHL data from ERDDAP
+```{r}
+## remove all spaces from string
+NoSpaces = function(x){
+  return(gsub(" ", "", x))
+}
+
+## set site coordinates and time for CHL extraction
+CHLSiteName = "Golfo Nuevo"   ## for the resulting file name
+CHLcoords.lon = -74
+CHLcoords.lat = 12
+
+CHLstartDate = "2012-01-01"
+
+## set climatological date start-end
+CHLclimStartDate = "2012-01-01"
+CHLclimEndDate = "2016-12-31"
+
+## set dataset source
+CHLsource = info("erdMH1chla8day")
+
+##
+## Get CHL 
+CHL <- griddap(CHLsource, 
+               time=c(CHLstartDate, "last"),
+               longitude = c(CHLcoords.lon,CHLcoords.lon),
+               latitude = c(CHLcoords.lat,CHLcoords.lat),
+               fields = "chlorophyll", fmt = "csv")
+
+CHL = CHL[,c(1,4)]
+names(CHL) = c("time", "CHL")
+CHL = na.omit(CHL)
+
+## convert time to a Data object
+CHL$time = as.Date(ymd_hms(CHL$time))
+
+```
+
+# Step 8
+Calculate CHL climatology
+```{r}
+CHL.clim = CHL %>% filter(time>=ymd(CHLclimStartDate), time<=CHLclimEndDate) %>% 
+  group_by(yDay = yday(time)) %>% 
+  summarise(CHL.mean = mean(CHL),
+            CHL.median = median(CHL),
+            CHL.sd = sd(CHL),
+            CHL.q5 = quantile(CHL, 0.05),
+            CHL.q10 = quantile(CHL, 0.10),
+            CHL.q25 = quantile(CHL, 0.25),
+            CHL.q75 = quantile(CHL, 0.75),
+            CHL.q90 = quantile(CHL, 0.90),
+            CHL.q95 = quantile(CHL, 0.95),
+            CHL.min = min(CHL),
+            CHL.max = max(CHL))
+```
+
+
+# Step 9
+Plot CHL time series
+```{r}
+CHL.xts = as.xts(CHL$CHL, CHL$time)
+dygraph(CHL.xts, 
+        ylab = "Chlorophyll a (mg m-3)") %>% 
+  dySeries("V1", label ="CHL", color = "steelblue") %>%
+  dyHighlight(highlightCircleSize = 5, 
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE) %>% 
+  dyOptions(fillGraph = FALSE, fillAlpha = 0.4) %>% 
+  dyRangeSelector(dateWindow = c(max(CHL$time) - years(5), max(CHL$time)))
+
+### CHL Last year with smoothed Climatology {data-width=250}
+
+## subset CHL for last year
+CHL.lastyear = CHL %>% filter(year(time)==max(year(time)))
+
+## make the plot
+pp = ggplot(CHL.clim, aes(yDay, CHL.mean))
+pp = pp + geom_line() + geom_smooth(span=0.25, se=FALSE, colour="steelblue") +  
+  geom_ribbon(aes(ymin=CHL.q25, ymax=CHL.q75), fill="steelblue", alpha=0.5) +
+  geom_line(data=CHL.lastyear, aes(yday(time), CHL), colour="red") + 
+  ylab("Chlorophyll a (mg m-3)") + xlab("Day of the Year") + 
+  theme_bw(base_size = 9) 
+ggplotly(pp) %>% plotly::config(displayModeBar = F) 
+
+```
+
+#Step 10
+Save CHL time series data
+```{r}
+write_csv(CHL, path = paste0(NoSpaces(CHLSiteName), "_CHL.csv"))
+write_csv(CHL.clim, path = paste0(NoSpaces(CHLSiteName), "_Climatology.csv"))
+```
+
+#Step 11
+Create a map of the latest CHL data
+```{r}
+require("rerddap")
+require("ggplot2")
+require("mapdata")
+
+# get latest Monthly chl (VIIRS)
+chlaInfo <- info('nesdisVHNSQchlaMonthly')
+viirsCHLA <- griddap(chlaInfo, latitude = c(-20., -60.), longitude = c(-90., -47.), time = c('last','last'), fields = 'chlor_a')
+
+# get latest 8-day chl (MODIS)
+chlaInfo_8d <- info('erdMH1chla8day')
+MODIS_CHLA_8d <- griddap(chlaInfo_8d, latitude = c(-20., -60.), longitude = c(-90., -47.), time = c('last','last'), fields = 'chlorophyll')
+
+# Map monthly chl (VIIRS)
+mycolor <- colors$chlorophyll
+w <- map_data("worldHires", ylim = c(-60., -20.), xlim = c(-90., -47.))
+ggplot(data = viirsCHLA$data, aes(x = lon, y = lat, fill = log(chlor_a))) + 
+  geom_polygon(data = w, aes(x = long, y = lat, group = group), fill = "grey80") +
+  geom_raster(interpolate = FALSE) +
+  scale_fill_gradientn(colours = mycolor, na.value = NA) +
+  theme_bw() + ylab("latitude") + xlab("longitude") +
+  coord_fixed(1.3, xlim = c(-90., -47.),  ylim = c(-60., -20.)) + ggtitle("Latest VIIRS Monthly Chla")
+
+# Map 8-day chl (MODIS)
+mycolor <- colors$chlorophyll
+w <- map_data("worldHires", ylim = c(-60., -20.), xlim = c(-90., -47.))
+ggplot(data = MODIS_CHLA_8d$data, aes(x = lon, y = lat, fill = log(chlorophyll))) + 
+  geom_polygon(data = w, aes(x = long, y = lat, group = group), fill = "grey80") +
+  geom_raster(interpolate = FALSE) +
+  scale_fill_gradientn(colours = mycolor, na.value = NA) +
+  theme_bw() + ylab("latitude") + xlab("longitude") +
+  coord_fixed(1.3, xlim = c(-90., -47.),  ylim = c(-60., -20.)) + ggtitle("Latest MODIS 8-day Chla")
+```
+
