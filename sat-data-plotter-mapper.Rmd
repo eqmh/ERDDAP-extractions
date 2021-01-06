@@ -40,8 +40,8 @@ NoSpaces = function(x){
 
 ## set site coordinates and time for SST extraction
 SSTSiteName = "Patagonia"   ## for the resulting file name
-SSTcoords.lon = -64.
-SSTcoords.lat = -41.7
+SSTcoords.lon = -63.
+SSTcoords.lat = -42.5
 
 SSTstartDate = "2002-06-01"
 
@@ -147,9 +147,9 @@ NoSpaces = function(x){
 }
 
 ## set site coordinates and time for CHL extraction
-CHLSiteName = "Golfo Nuevo"   ## for the resulting file name
-CHLcoords.lon = -74
-CHLcoords.lat = 12
+CHLSiteName = "Patagonia"   ## for the resulting file name
+CHLcoords.lon = -63
+CHLcoords.lat = -42.5
 
 CHLstartDate = "2012-01-01"
 
