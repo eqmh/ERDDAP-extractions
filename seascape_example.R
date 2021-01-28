@@ -61,8 +61,8 @@ e_lon <- site_lon + box
 w_lon <- site_lon - box
 
 # define time period
-t0 <- '2020-10'
-tf <- '2020-10'
+t0 <- '2020-12'
+tf <- '2020-12'
 
 # download as csv
 # weekly (8-day): https://cwcgom.aoml.noaa.gov/erddap/info/noaa_aoml_seascapes_8day/index.html
