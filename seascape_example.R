@@ -12,6 +12,8 @@ library(leaflet)
 library(leafem)
 library(raster)
 library(viridis)
+library(data.table)
+library(glue)
 
 # query params for seascapes
 seascapeInfo <- info("noaa_aoml_4729_9ee6_ab54", url = "https://cwcgom.aoml.noaa.gov/erddap/")  
@@ -60,9 +62,9 @@ s_lat <- site_lat - box
 e_lon <- site_lon + box
 w_lon <- site_lon - box
 
-# define time period
-t0 <- '2020-12'
-tf <- '2020-12'
+# define time period (use same yyyy-mm for 8d seascapes)
+t0 <- '2020-11'
+tf <- '2020-11'
 
 # download as csv
 # weekly (8-day): https://cwcgom.aoml.noaa.gov/erddap/info/noaa_aoml_seascapes_8day/index.html
