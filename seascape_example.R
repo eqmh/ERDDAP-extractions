@@ -14,6 +14,7 @@ library(raster)
 library(viridis)
 library(data.table)
 library(glue)
+library(raster)
 
 # query params for seascapes
 seascapeInfo <- info("noaa_aoml_4729_9ee6_ab54", url = "https://cwcgom.aoml.noaa.gov/erddap/")  
@@ -66,15 +67,36 @@ w_lon <- site_lon - box
 t0 <- '2020-11'
 tf <- '2020-11'
 
+# define product P: probability or CLASS: seascape class
+prod = "CLASS"
+
 # download as csv
 # weekly (8-day): https://cwcgom.aoml.noaa.gov/erddap/info/noaa_aoml_seascapes_8day/index.html
-df_8d <- fread(glue("http://cwcgom.aoml.noaa.gov/erddap/griddap/noaa_aoml_seascapes_8day.csv?CLASS[({t0}-01):1:({tf}-01)][({s_lat}):1:({n_lat})][({w_lon}):1:({e_lon})]"))
+df_8d <- fread(glue("http://cwcgom.aoml.noaa.gov/erddap/griddap/noaa_aoml_seascapes_8day.csv?{prod}[({t0}-01):1:({tf}-01)][({s_lat}):1:({n_lat})][({w_lon}):1:({e_lon})]"))
 # monthly: https://cwcgom.aoml.noaa.gov/erddap/info/noaa_aoml_4729_9ee6_ab54/index.html
-df_mo <- fread(glue("http://cwcgom.aoml.noaa.gov/erddap/griddap/noaa_aoml_4729_9ee6_ab54.csv?CLASS[({t0}-01):1:({tf}-01)][({s_lat}):1:({n_lat})][({w_lon}):1:({e_lon})]"))
+df_mo <- fread(glue("http://cwcgom.aoml.noaa.gov/erddap/griddap/noaa_aoml_4729_9ee6_ab54.csv?{prod}[({t0}-01):1:({tf}-01)][({s_lat}):1:({n_lat})][({w_lon}):1:({e_lon})]"))
 
-# create map with downloaded monthly data
 # delete first row
+df_8d <- df_8d[-1, ]
 df_mo <- df_mo[-1, ]
+
+# extraction of class values within polygon (for now only works with a single time period)
+df_mo_2 <- data.frame(cbind(as.numeric(df_mo$longitude), as.numeric(df_mo$latitude), as.numeric(df_mo$CLASS)))
+coordinates(df_mo_2) <- ~ X1 + X2
+gridded(df_mo_2) <- TRUE
+rasterDF <- raster(df_mo_2)
+
+# define polygon
+e_pt <- -80
+w_pt <- -82
+n_pt <- 23
+s_pt <- 21
+poly <- spPolygons(rbind(c(w_pt, s_pt), c(e_pt, s_pt), c(e_pt, n_pt), c(w_pt, n_pt), c(w_pt, s_pt)))
+
+# extract polygon seascape values
+seas_poly <- extract(rasterDF, poly)
+
+# create map with downloaded monthly data (for now only works with a single time period)
  # generate map
 names(df_mo) = c("dateTime", "lat", "lon", "SCclass")
 rr_mo <- rasterFromXYZ(cbind(as.numeric(df_mo$lon), as.numeric(df_mo$lat), as.numeric(df_mo$SCclass)))
@@ -86,9 +108,7 @@ m_mo <- leaflet() %>% addTiles() %>% addRasterImage(rr_mo, colors = pal, opacity
             title = "CLASS")
 m_mo
 
-# create map with downloaded 8-day data
-# delete first row
-df_8d <- df_8d[-1, ]
+# create map with downloaded 8-day data (for now only works with a single time period)
 # generate map
 names(df_8d) = c("dateTime", "lat", "lon", "SCclass")
 rr_8d <- rasterFromXYZ(cbind(as.numeric(df_8d$lon), as.numeric(df_8d$lat), as.numeric(df_8d$SCclass)))
