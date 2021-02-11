@@ -66,7 +66,7 @@ w_lon <- site_lon - box
 
 # define time period (use same yyyy-mm for 8d seascapes)
 t0 <- '2020-01'
-tf <- '2020-12'
+tf <- '2020-11' # must not be > date of most recent classification.
 
 # define product P: probability or CLASS: seascape class
 prod = "CLASS"
@@ -122,7 +122,7 @@ m_8d <- leaflet() %>% addTiles() %>% addRasterImage(rr_8d, colors = pal, opacity
 m_8d
 
 # download as netCDF
-download.file(url=glue("https://cwcgom.aoml.noaa.gov/thredds/ncss/SEASCAPE_MONTH/SEASCAPES.nc?var=CLASS&var=P&north={n_lat}&west={w_lon}&east={e_lon}&south={s_lat}&disableProjSubset=on&horizStride=1&time_start={t0}-15T12%3A00%3A00Z&time_end={tf}-15T12%3A00%3A00Z&timeStride=1&addLatLon=true&accept=netcdf"), destfile="~/ERDDAP-extractions/test.nc")
+download.file(url=glue("https://cwcgom.aoml.noaa.gov/thredds/ncss/SEASCAPE_8DAY/SEASCAPES.nc?var=CLASS&var=P&north={n_lat}&west={w_lon}&east={e_lon}&south={s_lat}&disableProjSubset=on&horizStride=1&time_start={t0}-15T12%3A00%3A00Z&time_end={tf}-15T12%3A00%3A00Z&timeStride=1&addLatLon=true&accept=netcdf"), destfile="~/ERDDAP-extractions/test.nc")
 nc_data <- nc_open(file="~/ERDDAP-extractions/test.nc") # not working on PC but works fine on Mac (have not looked at this carefully)
 
 # lon <- ncvar_get(nc_data, "lon")
