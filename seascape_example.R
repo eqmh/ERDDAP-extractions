@@ -15,6 +15,7 @@ library(viridis)
 library(data.table)
 library(glue)
 library(raster)
+library(ncdf4)
 
 # query params for seascapes
 seascapeInfo <- info("noaa_aoml_4729_9ee6_ab54", url = "https://cwcgom.aoml.noaa.gov/erddap/")  
@@ -64,8 +65,8 @@ e_lon <- site_lon + box
 w_lon <- site_lon - box
 
 # define time period (use same yyyy-mm for 8d seascapes)
-t0 <- '2020-11'
-tf <- '2020-11'
+t0 <- '2020-01'
+tf <- '2020-12'
 
 # define product P: probability or CLASS: seascape class
 prod = "CLASS"
@@ -120,13 +121,12 @@ m_8d <- leaflet() %>% addTiles() %>% addRasterImage(rr_8d, colors = pal, opacity
             title = "CLASS")
 m_8d
 
-# # download as netCDF
-# download.file(url=glue("https://cwcgom.aoml.noaa.gov/thredds/ncss/SEASCAPE_MONTH/SEASCAPES.nc?var=CLASS&var=P&north={n_lat}&west={w_lon}&east={e_lon}&south={s_lat}&disableProjSubset=on&horizStride=1&time_start={t0}-15T12%3A00%3A00Z&time_end={tf}-15T12%3A00%3A00Z&timeStride=1&addLatLon=true&accept=netcdf"), destfile="~/ERDDAP-extractions/test.nc")
-# nc_data <- nc_open(file="~/ERDDAP-extractions/test.nc")
-# 
-# # lon <- ncvar_get(nc_data, "lon")
-# lat <- ncvar_get(nc_data, "lat", verbose = F)
-# t <- ncvar_get(nc_data, "time")
-# CLASS <- ncvar_get(nc_data, "CLASS")
-# last <- data.frame(CLASS[ , , 2])
+# download as netCDF
+download.file(url=glue("https://cwcgom.aoml.noaa.gov/thredds/ncss/SEASCAPE_MONTH/SEASCAPES.nc?var=CLASS&var=P&north={n_lat}&west={w_lon}&east={e_lon}&south={s_lat}&disableProjSubset=on&horizStride=1&time_start={t0}-15T12%3A00%3A00Z&time_end={tf}-15T12%3A00%3A00Z&timeStride=1&addLatLon=true&accept=netcdf"), destfile="~/ERDDAP-extractions/test.nc")
+nc_data <- nc_open(file="~/ERDDAP-extractions/test.nc") # not working on PC but works fine on Mac (have not looked at this carefully)
+
+# lon <- ncvar_get(nc_data, "lon")
+lat <- ncvar_get(nc_data, "lat", verbose = F)
+t <- ncvar_get(nc_data, "time")
+CLASS <- ncvar_get(nc_data, "CLASS")
 
