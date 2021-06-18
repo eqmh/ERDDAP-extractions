@@ -65,8 +65,8 @@ e_lon <- site_lon + box
 w_lon <- site_lon - box
 
 # define time period (use same yyyy-mm for 8d seascapes)
-t0 <- '2020-01'
-tf <- '2020-11' # must not be > date of most recent classification.
+t0 <- '2021-02'
+tf <- '2021-02' # must not be > date of most recent classification.
 
 # define product P: probability or CLASS: seascape class
 prod = "CLASS"
@@ -109,24 +109,24 @@ m_mo <- leaflet() %>% addTiles() %>% addRasterImage(rr_mo, colors = pal, opacity
             title = "CLASS")
 m_mo
 
-# create map with downloaded 8-day data (for now only works with a single time period)
-# generate map
-names(df_8d) = c("dateTime", "lat", "lon", "SCclass")
-rr_8d <- rasterFromXYZ(cbind(as.numeric(df_8d$lon), as.numeric(df_8d$lat), as.numeric(df_8d$SCclass)))
-crs(rr_8d) <- CRS("+init=epsg:4326")
-pal <- colorNumeric("Spectral", values(rr_8d), reverse=T,
-                    na.color = "transparent") # other palette: c("#0C2C84", "#41B6C4", "#FFFFCC")
-m_8d <- leaflet() %>% addTiles() %>% addRasterImage(rr_8d, colors = pal, opacity = 0.8) %>%
-  addLegend(pal = pal, values = values(rr_8d),
-            title = "CLASS")
-m_8d
-
-# download as netCDF
-download.file(url=glue("https://cwcgom.aoml.noaa.gov/thredds/ncss/SEASCAPE_8DAY/SEASCAPES.nc?var=CLASS&var=P&north={n_lat}&west={w_lon}&east={e_lon}&south={s_lat}&disableProjSubset=on&horizStride=1&time_start={t0}-15T12%3A00%3A00Z&time_end={tf}-15T12%3A00%3A00Z&timeStride=1&addLatLon=true&accept=netcdf"), destfile="~/ERDDAP-extractions/test.nc")
-nc_data <- nc_open(file="~/ERDDAP-extractions/test.nc") # not working on PC but works fine on Mac (have not looked at this carefully)
-
-# lon <- ncvar_get(nc_data, "lon")
-lat <- ncvar_get(nc_data, "lat", verbose = F)
-t <- ncvar_get(nc_data, "time")
-CLASS <- ncvar_get(nc_data, "CLASS")
+# # create map with downloaded 8-day data (for now only works with a single time period)
+# # generate map
+# names(df_8d) = c("dateTime", "lat", "lon", "SCclass")
+# rr_8d <- rasterFromXYZ(cbind(as.numeric(df_8d$lon), as.numeric(df_8d$lat), as.numeric(df_8d$SCclass)))
+# crs(rr_8d) <- CRS("+init=epsg:4326")
+# pal <- colorNumeric("Spectral", values(rr_8d), reverse=T,
+#                     na.color = "transparent") # other palette: c("#0C2C84", "#41B6C4", "#FFFFCC")
+# m_8d <- leaflet() %>% addTiles() %>% addRasterImage(rr_8d, colors = pal, opacity = 0.8) %>%
+#   addLegend(pal = pal, values = values(rr_8d),
+#             title = "CLASS")
+# m_8d
+# 
+# # download as netCDF
+# download.file(url=glue("https://cwcgom.aoml.noaa.gov/thredds/ncss/SEASCAPE_8DAY/SEASCAPES.nc?var=CLASS&var=P&north={n_lat}&west={w_lon}&east={e_lon}&south={s_lat}&disableProjSubset=on&horizStride=1&time_start={t0}-15T12%3A00%3A00Z&time_end={tf}-15T12%3A00%3A00Z&timeStride=1&addLatLon=true&accept=netcdf"), destfile="~/ERDDAP-extractions/test.nc")
+# nc_data <- nc_open(file="~/ERDDAP-extractions/test.nc") # not working on PC but works fine on Mac (have not looked at this carefully)
+# 
+# # lon <- ncvar_get(nc_data, "lon")
+# lat <- ncvar_get(nc_data, "lat", verbose = F)
+# t <- ncvar_get(nc_data, "time")
+# CLASS <- ncvar_get(nc_data, "CLASS")
 
